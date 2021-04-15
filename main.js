@@ -1,4 +1,5 @@
-let GridSystem = (game, state, settings) => {
+//eanDebug make all "game" attributes compatible with Phaser 3
+let GridSystem = (game, settings) => {
     let error = (type) => {
         throw `Grid System needs: ${type}`
     }
@@ -20,18 +21,18 @@ let GridSystem = (game, state, settings) => {
     */
 
     
-    let width        = settings.width || error("width")
-    let height       = settings.height || error("height")
-    let gridSprite   = settings.gridSprite || error("phaser sprite")
-    let rowAmount    = settings.rowAmount || error("rowAmount");
-    let columnAmount = settings.columnAmount || error("columnAmount")
+    let width        = settings.width || error("width");               //height of panel
+    let height       = settings.height || error("height");             //width of panel
+    let gridSprite   = settings.gridSprite || error("phaser sprite");  //phaser sprite of grid
+    let rowAmount    = settings.rowAmount || error("rowAmount");      //width of entire grid
+    let columnAmount = settings.columnAmount || error("columnAmount"); //height of entire grid
     
 
-    let alpha        = settings.alpha || 1;
-    let startX       = settings.startX || 0;
-    let startY       = settings.startY || 0;
-    let xGap         = settings.xGap || 0;
-    let yGap         = settings.yGap || 0;
+    let alpha        = settings.alpha || 1;  //grid opacity value
+    let startX       = settings.startX || 0; //base x coordinate of grid
+    let startY       = settings.startY || 0; //base y coordinate of grid
+    let xGap         = settings.xGap || 0;   //horizonatal space between panels
+    let yGap         = settings.yGap || 0;   //vertical space between panels
     let gs = {};
     gs._occupantID = 0;
     gs._occupiedPanels = {}; //collection of signatures;
@@ -52,33 +53,17 @@ let GridSystem = (game, state, settings) => {
                 panelSprite.visible = false;
                 let panelShell = {
                     sprite: panelSprite,
-                    //collision detection should only happen if both sprites are in the same occupancy
-                    //the occupants collection can be seen as a sort z-depth
-                    occupants: [],
-                    target: false,
-                    pursuers: 0,
+                    occupants: [], //collection of different game objects on this panel
                     neighbors: {
                         up: null,
                         down: null,
                         left: null,
                         right: null
-                    },
-                    idAxis: [r, c], //xy coordinate basis
+                    }, //adjacent grid panels
+                    idAxis: [r, c], //grid coordinates for instant lookup in _occupiedPanels
                     positionUpdated: false,
                     gridSystem: gs,
-                    status: 0, //0 idle, 2-6 fireball
-                };
-                panelShell.updatePursuers = (amount = 0) => {
-                    panelShell.pursuers += amount;
-                    if (panelShell.pursuers > 0) {
-                        panelShell.sprite.loadTexture(config.level1State.crosshairPanel.spriteKey);
-                        panelShell.sprite.visible = true;
-                    }
-                    else {
-                        panelShell.sprite.visible = false;
-                    }
-
-                    return panelShell.pursuers;                    
+                    status: 0, //arbitrary state of this panel, zero is assummed idle and empty
                 };
                 panels[r].push(panelShell);
             };
@@ -125,7 +110,7 @@ let GridSystem = (game, state, settings) => {
             if (panel.occupants[occ] === occupant){
                 let removed = panel.occupants.splice(occ, 1)[0];
                 
-                if (typeof removed.type !== "undefined" && config.default.fireballTypes[removed.type]){
+                if (typeof removed.type !== "undefined"){
                     panel.status = 0;
                 }
                 break;
@@ -154,7 +139,7 @@ let GridSystem = (game, state, settings) => {
 
     gs.moveOccupantPanelDirection = (occupant, gridDirection, call = null) => {
         let destination
-        if (occupant.canMove || config.default.fireballTypes[occupant.type]) {
+        if (occupant.canMove) {
              switch(gridDirection){
                 case "up":
                     if (occupant.currentPanel.neighbors.up !== null){
@@ -197,20 +182,8 @@ let GridSystem = (game, state, settings) => {
                 break;
             }
             if (typeof destination !== "undefined" && call !== null && typeof call === "function"){
-                gs.transferOccupant(...destination)
-                call(...destination)
-
-                //cooldown player movement, should restart based on registerOccupant
-                if (occupant.type === config.default.type.player) {
-                    occupant.canMove = false;
-                    let resetter = [
-                        Phaser.Timer.SECOND * occupant.coolDownModifier,
-                        gs.resetMovement,
-                        state,
-                        occupant
-                    ]
-                    game.time.events.add(...resetter);
-                }
+                gs.transferOccupant(...destination);
+                call(...destination);
             } 
         }
     }
@@ -263,23 +236,6 @@ let GridSystem = (game, state, settings) => {
             panel.occupants.forEach((shell) => {
                 if (shell.onPanel !== null && typeof shell.onPanel === "function"){
                     shell.onPanel(panel);
-                }
-                if (shell.canMove){
-                    shell.sprite.x = panel.sprite.x + shell.panX + shell.varX;
-                    shell.sprite.y = panel.sprite.y + shell.panY + shell.varY;
-                }
-
-                if (typeof shell.type !== "undefined" && config.default.fireballTypes[shell.type]){
-                    let nearFlameX = (shell.sprite.x <= panel.sprite.x + shell.heatDistance) 
-                                  && (shell.sprite.x >= panel.sprite.x - shell.heatDistance)
-                    let nearFlameY = (shell.sprite.y >= panel.sprite.y - shell.heatDistance) 
-                                  && (shell.sprite.y <= panel.sprite.y + shell.heatDistance)
-                    if (nearFlameX && nearFlameY){
-                        panel.status = config.default.fireballTypes[shell.type]
-                    }
-                    else {
-                        panel.status = 0
-                    }
                 }
             });
         }
