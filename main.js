@@ -12,7 +12,6 @@ let GridSystem = (game, settings) => {
             type: 0, //occupant type as it pertains game object identity
             inputs: {}, //inputs interface
             onPanel: [function], //callback occuring everytime occupant changes panels
-            commands: [function], 
             currentPanel: panelShell,
             gridId: 0,
             coolDownModifier: 0.75, //delta for next movement
@@ -208,15 +207,13 @@ let GridSystem = (game, settings) => {
         return newPanel;
     }
 
+    /**
+     * Assign id to first time being on the grid
+     * @param {object} occupant - shell representing game sprite
+     * @returns {object} occupant
+     */
     gs.registerOccupant = (occupant) => {
         occupant.gridID = gs._occupantID++;
-        let resetter = [
-            Phaser.Timer.SECOND * occupant.coolDownModifier,
-            gs.resetMovement,
-            state,
-            occupant
-        ];
-        game.time.events.add(...resetter);
         return occupant;
     }
 
