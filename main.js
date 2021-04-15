@@ -72,7 +72,7 @@ let GridSystem = (game, settings) => {
         return panels;
     };
 
-    gs._findNeighbors = () => {
+    gs._assignNeighbors = () => {
         for (let row = 0; row < gs.panels.length; row++){
             for (let col = 0; col < gs.panels[row].length; col++){
                 let panel = gs.panels[row][col];
@@ -92,8 +92,6 @@ let GridSystem = (game, settings) => {
         }
     };
     
-
-
     gs.insertOccupant = (y, x, occupantShell) => {
         let panel = gs.panels[y][x];
         panel.occupants.push(occupantShell);
@@ -242,6 +240,8 @@ let GridSystem = (game, settings) => {
     };
 
     gs.panels = gs._generateGridPanels();
-    gs._findNeighbors();
+    gs._assignNeighbors();
 	return gs;
 }
+
+export default attackSequence;
