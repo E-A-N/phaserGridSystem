@@ -1,5 +1,5 @@
 //eanDebug make all "game" attributes compatible with Phaser 3
-let GridSystem = (game, settings) => {
+let GridSystem = (scene, settings) => {
     let error = (type) => {
         throw `Grid System needs: ${type}`
     }
@@ -43,16 +43,16 @@ let GridSystem = (game, settings) => {
             for (let c = 0; c < columnAmount; c++){
                 let xPosition = startX + (xGap * c) + (c * width);
                 let yPosition = startY + (yGap * r) + (r * height);
-                let panelSprite = game.add.sprite(xPosition, yPosition, gridSprite);
+                let panelSprite = scene.add.sprite(xPosition, yPosition, gridSprite);
                 panelSprite.width  = width;
                 panelSprite.height = height;
                 panelSprite.alpha = alpha;
-                panelSprite.anchor.x = 0.5;
-                panelSprite.anchor.y = 0.5;
+                panelSprite.originX = 0.5;
+                panelSprite.originY = 0.5;
                 panelSprite.visible = false;
                 let panelShell = {
                     sprite: panelSprite,
-                    occupants: [], //collection of different game objects on this panel
+                    occupants: [], //collection of different scene objects on this panel
                     neighbors: {
                         up: null,
                         down: null,
@@ -241,4 +241,4 @@ let GridSystem = (game, settings) => {
 	return gs;
 }
 
-export default attackSequence;
+export default GridSystem;
