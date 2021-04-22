@@ -44,8 +44,8 @@ let GridSystem = (scene, settings) => {
                 let xPosition = startX + (xGap * c) + (c * width);
                 let yPosition = startY + (yGap * r) + (r * height);
                 let panelSprite = scene.add.sprite(xPosition, yPosition, gridSprite);
-                panelSprite.width  = width;
-                panelSprite.height = height;
+                panelSprite.displayWidth  = width;
+                panelSprite.displayHeight = height;
                 panelSprite.alpha = alpha;
                 panelSprite.originX = 0.5;
                 panelSprite.originY = 0.5;
