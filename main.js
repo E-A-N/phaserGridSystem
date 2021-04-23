@@ -36,9 +36,11 @@ let GridSystem = (scene, settings) => {
     //3D 'depth' attributes
     let depth = settings.depth || 0;  //amount of layers in depth (or z space)
     let zGap  = settings.zGap || 0; //space between panel floor levels
-    let layerOffset = settings.layerOffset || [[0,0]]; //2d array of layers representing indexes that specify the offset of the respective layer
+    //2d array of layers representing indexes that specify the offset of the respective layer
+    //to give a 3D perspective
+    let layerOffset = settings.layerOffset || [[0,0]]; 
     
-    let layerOffsetError = (Array.isArray(layerOffset) === false) || layerOffset.length - 1 !== depth;
+    let layerOffsetError = (Array.isArray(layerOffset) === false) || layerOffset.length !== depth;
     if (layerOffsetError){
         error("a correct layer offset");
     }
@@ -47,13 +49,18 @@ let GridSystem = (scene, settings) => {
     gs._occupantID = 0;
     gs._occupiedPanels = {}; //collection of signatures;
     
-    gs._generateGridPanels = (depth) => {
+    gs._generateGridPanels = (depthIn) => {
         let panels = [];
         for (let r = 0; r < rowAmount; r++){
             panels.push([]);
             for (let c = 0; c < columnAmount; c++){
-                let xPosition = startX + layerOffset[depth][0] + (xGap * c) + (c * width);
-                let yPosition = startY + layerOffset[depth][1] + (yGap * r) + (r * height);
+                let zOff = zGap * depthIn;
+                let xPosition = startX + layerOffset[depthIn][0] + (xGap * c) + (c * width);
+                let yPosition = startY + layerOffset[depthIn][1] + (yGap * r) + (r * height);
+                // xPosition  += (xGap * c) + (c * width);
+                // yPosition += (yGap * r) + (r * height);
+                // xPosition += zOff; //give perspective angle from other layers
+                // yPosition += zOff;
                 let panelSprite = scene.add.sprite(xPosition, yPosition, gridSprite);
                 panelSprite.displayWidth  = width;
                 panelSprite.displayHeight = height;
@@ -82,28 +89,29 @@ let GridSystem = (scene, settings) => {
         return panels;
     };
 
-    gs._assignNeighbors = (depth) => {
-        for (let row = 0; row < gs.panels[depth].length; row++){
-            for (let col = 0; col < gs.panels[depth][row].length; col++){
-                let panel = gs.panels[depth][row][col];
+    gs._assignNeighbors = (depthIn) => {
+        let test = gs.panels[depthIn];
+        for (let row = 0; row < gs.panels[depthIn].length; row++){
+            for (let col = 0; col < gs.panels[depthIn][row].length; col++){
+                let panel = gs.panels[depthIn][row][col];
                 if (row > 0){
-                    panel.neighbors.up = gs.panels[depth][row - 1][col];
+                    panel.neighbors.up = gs.panels[depthIn][row - 1][col];
                 }
-                if (row < gs.panels[depth].length - 1){
-                    panel.neighbors.down = gs.panels[depth][row + 1][col];
+                if (row < gs.panels[depthIn].length - 1){
+                    panel.neighbors.down = gs.panels[depthIn][row + 1][col];
                 }
                 if (col > 0){
-                    panel.neighbors.left = gs.panels[depth][row][col -1];
+                    panel.neighbors.left = gs.panels[depthIn][row][col -1];
                 }
-                if (col < gs.panels[depth][row].length - 1){
-                    panel.neighbors.right = gs.panels[depth][row][col + 1];
+                if (col < gs.panels[depthIn][row].length - 1){
+                    panel.neighbors.right = gs.panels[depthIn][row][col + 1];
                 }
             }
         }
     };
     
-    gs.insertOccupant = (y, x, depth, occupantShell) => {
-        let panel = gs.panels[depth][y][x];
+    gs.insertOccupant = (y, x, depthIn, occupantShell) => {
+        let panel = gs.panels[depthIn][y][x];
         panel.occupants.push(occupantShell);
         occupantShell.currentPanel = panel;
         if (occupantShell.onPanel !== null && typeof occupantShell.onPanel === "function"){
@@ -232,13 +240,13 @@ let GridSystem = (scene, settings) => {
         shell.canMove = true;
     }
 
-    gs.update = (depth) => {
+    gs.update = (depthIn) => {
         let oPanels = gs._occupiedPanels;
         for (let i in oPanels){
             let p = oPanels[i];
             let x = p[1];
             let y = p[0];
-            let panel = gs.panels[depth][y][x];
+            let panel = gs.panels[depthIn][y][x];
             panel.occupants.forEach((shell) => {
                 if (shell.onPanel !== null && typeof shell.onPanel === "function"){
                     shell.onPanel(panel);
@@ -248,8 +256,13 @@ let GridSystem = (scene, settings) => {
     };
 
     gs.panels = []
-    gs.panels.push(gs._generateGridPanels(0));
-    gs._assignNeighbors(0);
+    for (let i = 0; i < depth; i++) {
+        gs.panels.push(gs._generateGridPanels(i));
+        gs._assignNeighbors(i);
+    }
+    console.log(gs.panels[0][0][0].sprite.x)
+    console.log(gs.panels[1][0][0].sprite.x)
+    console.log(gs.panels[2][0][0].sprite.x)
 	return gs;
 }
 
