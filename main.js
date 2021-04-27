@@ -1,4 +1,3 @@
-//eanDebug make all "game" attributes compatible with Phaser 3
 let GridSystem = (scene, settings) => {
     let error = (type) => {
         throw `Grid System needs: ${type}`
@@ -41,7 +40,7 @@ let GridSystem = (scene, settings) => {
     let layerOffset = settings.layerOffset || [[0,0]]; 
     
     let layerOffsetError = (Array.isArray(layerOffset) === false) || layerOffset.length !== depth;
-    if (layerOffsetError){
+    if (settings.is3D && layerOffsetError){
         error("a correct layer offset");
     }
     
@@ -57,10 +56,6 @@ let GridSystem = (scene, settings) => {
                 let zOff = zGap * depthIn;
                 let xPosition = startX + layerOffset[depthIn][0] + (xGap * c) + (c * width);
                 let yPosition = startY + layerOffset[depthIn][1] + (yGap * r) + (r * height);
-                // xPosition  += (xGap * c) + (c * width);
-                // yPosition += (yGap * r) + (r * height);
-                // xPosition += zOff; //give perspective angle from other layers
-                // yPosition += zOff;
                 let panelSprite = scene.add.sprite(xPosition, yPosition, gridSprite);
                 panelSprite.displayWidth  = width;
                 panelSprite.displayHeight = height;
@@ -75,7 +70,9 @@ let GridSystem = (scene, settings) => {
                         up: null,
                         down: null,
                         left: null,
-                        right: null
+                        right: null,
+                        above: null,
+                        below: null
                     }, //adjacent grid panels
                     idAxis: [r, c], //grid coordinates for instant lookup in _occupiedPanels
                     positionUpdated: false,
@@ -105,6 +102,12 @@ let GridSystem = (scene, settings) => {
                 }
                 if (col < gs.panels[depthIn][row].length - 1){
                     panel.neighbors.right = gs.panels[depthIn][row][col + 1];
+                }
+                if (depthIn > 0) {
+                    panel.neighbors.below = gs.panels[depthIn - 1][row][col];
+                }
+                if (depthIn < depth -1){
+                    panel.neighbors.above = gs.panels[depthIn + 1][row][col];
                 }
             }
         }
@@ -196,6 +199,26 @@ let GridSystem = (scene, settings) => {
                         ]
                     }
                 break;
+
+                case "above":
+                    if (occupant.currentPanel.neighbors.above !== null){
+                        destination = [
+                            occupant,
+                            occupant.currentPanel,
+                            occupant.currentPanel.neighbors.above
+                        ]
+                    }
+                break;
+
+                case "below":
+                    if (occupant.currentPanel.neighbors.below !== null){
+                        destination = [
+                            occupant,
+                            occupant.currentPanel,
+                            occupant.currentPanel.neighbors.below
+                        ]
+                    }
+                break;
             }
             if (typeof destination !== "undefined" && call !== null && typeof call === "function"){
                 gs.transferOccupant(...destination);
@@ -236,10 +259,6 @@ let GridSystem = (scene, settings) => {
         return occupant;
     }
 
-    gs.resetMovement = (shell) => {
-        shell.canMove = true;
-    }
-
     gs.update = (depthIn) => {
         let oPanels = gs._occupiedPanels;
         for (let i in oPanels){
@@ -256,13 +275,21 @@ let GridSystem = (scene, settings) => {
     };
 
     gs.panels = []
-    for (let i = 0; i < depth; i++) {
-        gs.panels.push(gs._generateGridPanels(i));
-        gs._assignNeighbors(i);
+    if (settings.is3D){
+        for (let p = 0; p < depth; p++) {
+            let layer = gs._generateGridPanels(p)
+            gs.panels.push(layer);
+        }
+
+        for (let n = 0; n < depth; n++) {
+            gs._assignNeighbors(n);
+        }
     }
-    console.log(gs.panels[0][0][0].sprite.x)
-    console.log(gs.panels[1][0][0].sprite.x)
-    console.log(gs.panels[2][0][0].sprite.x)
+    else {
+        gs.panels.push(gs._generateGridPanels(0));
+        gs._assignNeighbors(0);
+    }
+
 	return gs;
 }
 
