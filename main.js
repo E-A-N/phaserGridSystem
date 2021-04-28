@@ -25,13 +25,14 @@ let GridSystem = (scene, settings) => {
     let rowAmount    = settings.rowAmount || error("rowAmount");      //width of entire grid
     let columnAmount = settings.columnAmount || error("columnAmount"); //height of entire grid
     
-
     let alpha        = settings.alpha || 1;  //grid opacity value
     let startX       = settings.startX || 0; //base x coordinate of grid
     let startY       = settings.startY || 0; //base y coordinate of grid
     let xGap         = settings.xGap || 0;   //horizonatal space between panels
     let yGap         = settings.yGap || 0;   //vertical space between panels
-    
+    let grid         = settings.grid  || null;
+
+
     //3D 'depth' attributes
     let depth = settings.depth || 0;  //amount of layers in depth (or z space)
     let zGap  = settings.zGap || 0; //space between panel floor levels
@@ -47,7 +48,7 @@ let GridSystem = (scene, settings) => {
     let gs = {};
     gs._occupantID = 0;
     gs._occupiedPanels = {}; //collection of signatures;
-    
+    gs._searchGrid = grid;
     gs._generateGridPanels = (depthIn) => {
         let panels = [];
         for (let r = 0; r < rowAmount; r++){
@@ -74,7 +75,7 @@ let GridSystem = (scene, settings) => {
                         above: null,
                         below: null
                     }, //adjacent grid panels
-                    idAxis: [r, c], //grid coordinates for instant lookup in _occupiedPanels
+                    idAxis: [depthIn, r, c], //grid coordinates for instant lookup in _occupiedPanels
                     positionUpdated: false,
                     gridSystem: gs,
                     status: 0, //arbitrary state of this panel, zero is assummed idle and empty
@@ -120,7 +121,7 @@ let GridSystem = (scene, settings) => {
         if (occupantShell.onPanel !== null && typeof occupantShell.onPanel === "function"){
             occupantShell.onPanel(panel);
         }
-        gs._occupiedPanels[`y${y},x${x}`] = panel.idAxis
+        gs._occupiedPanels[`z${depthIn}y${y},x${x}`] = panel.idAxis
         return panel
     };
 
@@ -259,7 +260,21 @@ let GridSystem = (scene, settings) => {
         return occupant;
     }
 
-    gs.update = (depthIn) => {
+    gs.update = (call) => {
+        if (settings.is3D){
+            for (let p = 0; p < depth; p++) {
+                gs.updatePanels(p);
+            }
+        }
+        else {
+            gs.updatePanels(0);
+        }
+
+        if (typeof call === "function"){
+            call();
+        }
+    }   
+    gs.updatePanels = (depthIn) => {
         let oPanels = gs._occupiedPanels;
         for (let i in oPanels){
             let p = oPanels[i];
@@ -272,7 +287,7 @@ let GridSystem = (scene, settings) => {
                 }
             });
         }
-    };
+    }
 
     gs.panels = []
     if (settings.is3D){
