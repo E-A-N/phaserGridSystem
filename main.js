@@ -48,7 +48,7 @@ let GridSystem = (scene, settings) => {
     let gs = {};
     gs._occupantID = 0;
     gs._occupiedPanels = {}; //collection of signatures;
-    gs._searchGrid = grid;
+    gs.searchGrid = grid;
     gs._generateGridPanels = (depthIn) => {
         let panels = [];
         for (let r = 0; r < rowAmount; r++){
@@ -114,7 +114,7 @@ let GridSystem = (scene, settings) => {
         }
     };
     
-    gs.insertOccupant = (y, x, depthIn, occupantShell) => {
+    gs.insertOccupant = (depthIn, y, x, occupantShell) => {
         let panel = gs.panels[depthIn][y][x];
         panel.occupants.push(occupantShell);
         occupantShell.currentPanel = panel;
